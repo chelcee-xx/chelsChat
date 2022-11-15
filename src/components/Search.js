@@ -1,21 +1,12 @@
 import React, { useContext, useState } from "react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  setDoc,
-  doc,
-  updateDoc,
-  serverTimestamp,
-  getDoc,
-} from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { AuthContext } from "../context/AuthContext";
+
 const Search = () => {
   const [username, setUsername] = useState("");
-  const [user, setUser] = useState(null);
   const [err, setErr] = useState(false);
+  const [user, setUser] = useState(null);
 
   const { currentUser } = useContext(AuthContext);
 
@@ -40,7 +31,7 @@ const Search = () => {
   };
 
   const handleSelect = async () => {
-    //check whether the group(chats in firestore) exists, if not create
+    //check whether the group(chats in firestore) exists or not, if not create new one
     const combinedId =
       currentUser.uid > user.uid
         ? currentUser.uid + user.uid
@@ -49,33 +40,39 @@ const Search = () => {
       const res = await getDoc(doc(db, "chats", combinedId));
 
       if (!res.exists()) {
-        //create a chat in chats collection
-        await setDoc(doc(db, "chats", combinedId), { messages: [] });
-
-        //create user chats
-        await updateDoc(doc(db, "userChats", currentUser.uid), {
-          [combinedId + ".userInfo"]: {
-            uid: user.uid,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-          },
-          [combinedId + ".date"]: serverTimestamp(),
+        // create a chat in chats collection
+        // from my understanding, this code creates a collection named chats in our firestore db, then under add document i.e the next row it puts the combinedId then when you click on it it opens the message array we created int another row, along with any othe variable we sha add
+        await setDoc(doc (db, "chats", combinedId), { 
+          messages: [] 
         });
 
-        await updateDoc(doc(db, "userChats", user.uid), {
-          [combinedId + ".userInfo"]: {
-            uid: currentUser.uid,
-            displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL,
-          },
-          [combinedId + ".date"]: serverTimestamp(),
-        });
+        // create user chats
       }
-    } catch (err) {}
+    
+    // create user chats
+    // this one goes to the already created userChats collection and updates the info there
+    await updateDoc(doc(db, "userChats", currentUser.uid),{
+      [combinedId+".userInfo"]: {
+        uid:user.uid,
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      },
+      [combinedId+".date"]: serverTimestamp()
+    });
+    await updateDoc(doc(db, "userChats", currentUser.uid),{
+      [combinedId+".userInfo"]: {
+        uid:user.uid,
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      },
+      [combinedId+".date"]: serverTimestamp()
+    });
+  
+  } catch(err) {}
 
-    setUser(null);
-    setUsername("")
-  };
+  setUser(null)
+  setUsername("")
+};
   return (
     <div className="search">
       <div className="searchForm">
@@ -87,10 +84,10 @@ const Search = () => {
           value={username}
         />
       </div>
-      {err && <span>User not found!</span>}
+      {err && <span>User Not Found</span>}
       {user && (
         <div className="userChat" onClick={handleSelect}>
-          <img src={user.photoURL} alt="" />
+          <img src={user.photoURL} alt="" className="" />
           <div className="userChatInfo">
             <span>{user.displayName}</span>
           </div>
